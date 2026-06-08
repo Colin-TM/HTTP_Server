@@ -1,6 +1,7 @@
 package org.example;
 import java.io.*;
 import java.nio.file.FileSystems;
+import java.util.HashMap;
 import java.util.Properties;
 import java.net.*;
 
@@ -37,8 +38,6 @@ public class Server {
             System.out.println("Connected to (" + HOST + ", " + clientSocket.getPort() + ")");
 
             try { // server-client's 5-second timed connection
-
-                // begin timer
                 clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
 
                 // initialize I/O streams
@@ -48,9 +47,28 @@ public class Server {
                 // keeps connection alive, so long the server receives requests
                 while (true) {
 
+                    // initialize status object to 200
                     StatusCodes status = new StatusCodes();
+                    status.setTo200();
 
-                    // RequestParser.java
+                    // parse the request for request line, headers, and body to form a request object
+                    HashMap<String, String> requestDetails = Parser.checkRequestLine(clientReader, status);
+                    if (requestDetails.isEmpty()) {
+                        System.out.println("[ Server.java - requestDetails is empty ]");
+                        // return a response object here & change status code
+                    }
+                    Request request = Parser.parseRequest(clientReader, status, requestDetails);
+
+                    // check for a complete request initialization (empty or null)
+                    if (request.getRequestInfo().isEmpty()) {
+                        System.out.println("[ Server.java - Request object is empty ]");
+                        // return a response object here & change status code
+                    } else if (request.getRequestInfo() == null) {
+                        System.out.println("[ Server.java - requestInfo is null ]");
+                        break;
+                    }
+
+                    // continue to ResponseHandler()...
                 }
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
