@@ -1,7 +1,6 @@
 package org.example;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashMap;
 
 public class Parser {
@@ -98,7 +97,6 @@ public class Parser {
             if (contentLength <= 0) {
                 System.out.println("[ Parser.java - Supplied Content Length is LESS than 0 ]");
                 status.setTo400();
-
             }
 
             StringBuilder bodyBuilder = new StringBuilder(contentLength);

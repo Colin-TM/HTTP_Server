@@ -5,19 +5,22 @@ import java.util.Map;
 
 public class Request {
 
-    private Map<String,String> info;
-    private final String originalURI;
+    private final String originalURI, httpMethod;
+    private final Map<String,String> headers;
 
     public Request(HashMap<String, String> details) {
-        this.info = details;
         this.originalURI = details.get("URI:");
+        this.httpMethod = details.get("Method:");
+        this.headers = details;
     };
-
-    public Map<String,String> getRequestInfo() {
-        return this.info;
-    }
 
     public String getOriginalURI() {
         return this.originalURI;
+    }
+    public String getHttpMethod() {
+        return this.httpMethod;
+    }
+    public Map<String,String> getHeaders() {
+        return this.headers;
     }
 }
