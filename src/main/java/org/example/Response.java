@@ -8,9 +8,11 @@ import java.util.Map;
 
 public class Response {
 
-    private String protocolVersion, statusCode;
-    private Map<String, String> headers;
+    private final String protocolVersion;
+    private String statusCode;
+    private HashMap<String, String> headers;
     private byte[] body;
+
     public Response(String status) {
         this.protocolVersion = "HTTP/1.1";
         this.statusCode = status;
@@ -20,6 +22,7 @@ public class Response {
     /**
      * Sets the default values for all headers the server seeks to address. Most will be left blank, as these are
      * given from the details of a respective request, but some are set to default values since these will not change
+     * for the most part
      */
     public void setDefaultHeaders() {
         // Assign. #1
@@ -29,7 +32,7 @@ public class Response {
         this.headers.put("Content-Length", "");
         this.headers.put("Content-Type", "application/octet-stream");
         this.headers.put("Connection", "");
-        this.headers.put("Allow", "");
+        this.headers.put("Allow", "GET, HEAD, TRACE, OPTIONS, POST");
         // Assign. #2
         this.headers.put("ETag", "");
         this.headers.put("Location", "");
@@ -56,13 +59,33 @@ public class Response {
         this.headers.put(key, val);
     }
 
+    public void setStatus(String updatedStatus) {
+        this.statusCode = updatedStatus;
+    }
+
     /**
-     * Sets the body field to a desired resource's content
+     * Sets the body field to a desired resource's content. Will also store the size of the resource inside of headers.
      * @param b - desired resource in bytes
      */
     public void setBody(byte[] b) {
         this.body = b;
         setHeader("Content-Length", String.valueOf(this.body.length));
+    }
+
+    public String getStatus() {
+        return this.statusCode;
+    }
+
+    public String getProtocolVersion() {
+        return this.protocolVersion;
+    }
+
+    /**
+     * Returns the current map of the response headers.
+     * @return - map of headers
+     */
+    public HashMap<String,String> getHeaderMap() {
+        return this.headers;
     }
 
     /**

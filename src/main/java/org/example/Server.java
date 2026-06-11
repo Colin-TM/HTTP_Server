@@ -24,18 +24,19 @@ public class Server {
                 // server-client's 5-second timed connection
                 clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
 
+                StatusCodes status = new StatusCodes();
                 OutputStream serverWriter = clientSocket.getOutputStream();
                 BufferedReader clientReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
                 while (true) {
 
                     // parse the request for request line, headers, and body to form a request object
-                    HashMap<String, String> requestDetails = Parser.checkRequestLine(clientReader);
+                    HashMap<String, String> requestDetails = RequestParser.checkRequestLine(clientReader);
                     if (requestDetails.isEmpty()) {
                         System.out.println("[ Server.java - requestDetails is empty ]");
                         break;
                     }
-                    Request request = Parser.parseRequest(clientReader, requestDetails);
+                    Request request = RequestParser.parseRequest(clientReader, requestDetails);
 
                     // check for a complete request initialization
                     if (request.getHttpMethod().isEmpty() ||
@@ -47,7 +48,9 @@ public class Server {
                         break;
                     }
 
-                    // Create a coordinator class to begin response creation...
+                    // exists to coordinate the response creation process
+                    RequestProcessor processor = new RequestProcessor();
+                    processor.process(request, status);
                 }
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);

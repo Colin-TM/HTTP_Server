@@ -5,6 +5,8 @@ package org.example;
  * is a custom status code that is not anticipated, it will be input manually since it will be the result of a CGI.
  */
 public class StatusCodes {
+
+    public StatusCodes() {};
     public String get200() { return "200 OK"; }
     public String get201() { return "201 Created"; }
     public String get206() { return "206 Partial Content"; }

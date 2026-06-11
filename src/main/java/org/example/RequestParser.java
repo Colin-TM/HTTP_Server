@@ -3,7 +3,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 
-public class Parser {
+public class RequestParser {
     /**
      * Checks the incoming request using the BufferedReader's readLine() method. The method only aims to validate the
      * request line and will return null if there are any issues.
