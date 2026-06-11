@@ -29,21 +29,18 @@ public class Server {
 
                 while (true) {
 
-                    // all requests begin with a 200 status code before any checks take place
-                    StatusCodes status = new StatusCodes();
-                    status.setTo200();
-
                     // parse the request for request line, headers, and body to form a request object
-                    HashMap<String, String> requestDetails = Parser.checkRequestLine(clientReader, status);
+                    HashMap<String, String> requestDetails = Parser.checkRequestLine(clientReader);
                     if (requestDetails.isEmpty()) {
                         System.out.println("[ Server.java - requestDetails is empty ]");
-                        // return a response object here & change status code
+                        break;
                     }
-                    Request request = Parser.parseRequest(clientReader, status, requestDetails);
+                    Request request = Parser.parseRequest(clientReader, requestDetails);
 
                     // check for a complete request initialization
                     if (request.getHttpMethod().isEmpty() ||
                             request.getOriginalURI().isEmpty() ||
+                            request.getProtocolVersion().isEmpty() ||
                             request.getHeaders().isEmpty()) {
 
                         System.out.println("[ Server.java - requestInfo is null ]");
