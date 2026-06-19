@@ -22,7 +22,7 @@ public class Server {
 
             try {
                 // server-client's 5-second timed connection
-                clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
+                //clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
 
                 StatusCodes status = new StatusCodes();
                 OutputStream serverWriter = clientSocket.getOutputStream();
@@ -33,25 +33,29 @@ public class Server {
                     // parse the request for request line, headers, and body to form a request object
                     HashMap<String, String> requestDetails = RequestParser.checkRequestLine(clientReader);
                     if (requestDetails.isEmpty()) {
-                        System.out.println("[ Server.java - requestDetails is empty ]");
+                        System.err.println("[ Server.java - requestDetails is empty ]");
                         break;
                     }
                     Request request = RequestParser.parseRequest(clientReader, requestDetails);
 
                     // check for a complete request initialization
                     if (request.getHttpMethod().isEmpty() ||
-                            request.getOriginalURI().isEmpty() ||
+                            request.getOriginalUri().isEmpty() ||
                             request.getProtocolVersion().isEmpty() ||
                             request.getHeaders().isEmpty()) {
 
-                        System.out.println("[ Server.java - requestInfo is null ]");
+                        System.err.println("[ Server.java - requestInfo is null ]");
                         break;
                     }
 
                     // exists to coordinate the response creation process
                     RequestProcessor processor = new RequestProcessor();
-                    processor.process(request, status);
+                    processor.process(request, status, props);
+
+                    break; // to be removed
                 }
+                break; // to be removed
+
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
                 // create new response object for a timed out response

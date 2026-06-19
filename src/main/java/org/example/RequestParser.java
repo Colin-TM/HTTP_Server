@@ -89,7 +89,7 @@ public class RequestParser {
             // establish a length to read to and assure the provided is greater than 0
             int contentLength = Integer.parseInt(details.get("Content-Length:")) + 1;
             if (contentLength <= 0) {
-                System.out.println("[ Parser.java - Supplied Content Length is LESS than 0 ]");
+                System.err.println("[ Parser.java - Supplied Content Length is LESS than 0 ]");
             }
 
             StringBuilder bodyBuilder = new StringBuilder(contentLength);

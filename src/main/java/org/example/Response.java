@@ -80,6 +80,8 @@ public class Response {
         return this.protocolVersion;
     }
 
+    public byte[] getBody() { return this.body; }
+
     /**
      * Returns the current map of the response headers.
      * @return - map of headers
