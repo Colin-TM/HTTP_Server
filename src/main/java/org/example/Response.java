@@ -32,7 +32,7 @@ public class Response {
         this.headers.put("Content-Length", "");
         this.headers.put("Content-Type", "application/octet-stream");
         this.headers.put("Connection", "");
-        this.headers.put("Allow", "GET, HEAD, TRACE, OPTIONS, POST");
+        this.headers.put("Allow", "GET, HEAD, TRACE, OPTIONS, POST, PUT");
         // Assign. #2
         this.headers.put("ETag", "");
         this.headers.put("Location", "");

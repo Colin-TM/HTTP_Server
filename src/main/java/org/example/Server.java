@@ -17,8 +17,7 @@ public class Server {
 
         while (true) {
 
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("Connected to (" + HOST + ", " + clientSocket.getPort() + ")");
+            Socket clientSocket = acceptConnection(serverSocket, HOST);
 
             try {
                 // server-client's 5-second timed connection
@@ -50,7 +49,7 @@ public class Server {
 
                     // exists to coordinate the response creation process
                     RequestProcessor processor = new RequestProcessor();
-                    processor.process(request, status, props);
+                    Response response = processor.process(request, status, props);
 
                     break; // to be removed
                 }
@@ -79,5 +78,11 @@ public class Server {
                 "Listening on " + HOST +
                 ":" + PORT + " for HTTP connections..."
         );
+    }
+
+    private static Socket acceptConnection(ServerSocket serverSocket, String HOST) throws IOException {
+        Socket clientSocket = serverSocket.accept();
+        System.out.println("Connected to (" + HOST + ", " + clientSocket.getPort() + ")");
+        return clientSocket;
     }
 }

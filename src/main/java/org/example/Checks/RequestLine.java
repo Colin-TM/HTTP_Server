@@ -1,36 +1,60 @@
 package org.example.Checks;
 
 import org.example.Request;
+import org.example.RequestProcessor;
 import org.example.StatusCodes;
 
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Properties;
 
-/**
- * NEW IDEA - set attributes for request line to reflect the codes returned for each check
- *          - this way, when there is no error, we simply return true and carry on
- *          - else, when there is error, we can simply grab the code from the method directly with get/set
- */
-public class RequestLine {
+public class RequestLine extends RequestProcessor {
 
     public RequestLine() {}
 
-    public boolean checkRequestLine(Request request, URI uri, StatusCodes status, Properties props) {
+    public String checkRequestLine(Request request, URI uri, StatusCodes status, Properties props) {
+        // request line component #1
         String methodCode = checkHttpMethod(request.getHttpMethod(), status);
-        String uriCode = checkUriPath(uri, status, props);
+
+        if (!methodCode.equals(status.get200())) {
+            return methodCode; // 501 or 400
+        }
+
+        // request line component #2 (existing URI, valid MIME, non-aggressive file search)
+        String docsRoot = props.get("DOCS_ROOT").toString();
+        Path requestPath = Paths.get(uri.getPath());
+        Path fullPath = Paths.get(docsRoot+requestPath);
+
+        String uriCode = checkPathExists(fullPath, status);
+        if (uriCode.equals(status.get404())) {
+            String indexPath = checkIndexPath(fullPath, status);
+            if (!indexPath.isEmpty()) {
+                request.setAlteredUri(indexPath);
+                uriCode = status.get200();
+            }
+        }
+
+        if (!uriCode.equals(status.get200())) {
+            return uriCode;
+        }
+
+        uriCode = checkMimeType(fullPath, status);
+        if (!uriCode.equals(status.get200())) {
+            return uriCode;
+        }
+
+        // request line component #3
         String protocolCode = checkProtocolVersion(request.getProtocolVersion(), status);
 
-        if (methodCode.equals(status.get200()) &&
-                uriCode.equals(status.get200()) &&
-                protocolCode.equals(status.get200())) {
-            return true;
-        } else {
-            // find status code of the FIRST method that was not 200
-            return false;
+        if (!protocolCode.equals(status.get200())) {
+            return protocolCode;
         }
+
+        // all checks passed
+        return status.get200();
     }
 
     private String checkHttpMethod(String httpMethod, StatusCodes status) {
@@ -47,34 +71,44 @@ public class RequestLine {
         }
     }
 
-    private String checkUriPath(URI uri, StatusCodes status, Properties props) {
+    private String checkPathTraversal(Path filePath, StatusCodes status) {
+        // continue here!
+        return "";
+    }
 
-        String docsRoot = props.get("DOCS_ROOT").toString();
-        Path requestPath = Paths.get(uri.getPath());
-        Path responsePath = Paths.get(docsRoot+requestPath);
+    private String checkPathExists(Path filePath, StatusCodes status) {
 
-        //String fileName = filePath.toFile().getName();
-        //System.out.println("URI: " + uri.toString());
-        //System.out.println("Path: " + filePath);
-        //System.out.println("File: " + fileName);
-        //System.out.println("Response Path: " + docsRoot+filePath);
-
-        // check path existence
-        if (responsePath.toFile().exists()) {
+        if (filePath.toFile().exists()) {
             return status.get200();
         }
 
-        // check if ending in slash - if so, find index.html
-        if (responsePath.endsWith(File.separator)) {
-            responsePath = Paths.get(responsePath+File.separator+"index.html");
+        return status.get404();
+    }
 
-            if (responsePath.toFile().exists()) {
-                // if the path exists, we must update Request's alteredUri field
-                // return 200
+    private String checkIndexPath(Path filePath, StatusCodes status) {
+
+        // check for index file
+        if (filePath.endsWith(File.separator)) {
+            filePath = Paths.get(filePath+File.separator+"index.html");
+
+            if (filePath.toFile().exists()) {
+                return filePath.toString();
             }
         }
 
-        return status.get404();
+        // if no index is found, we can safely check for an empty string
+        return "";
+    }
+
+    private String checkMimeType(Path filePath, StatusCodes status) {
+        ArrayList<String> extensions = getFileExtensions();
+        for (String extension : extensions) {
+            if (extension.equals(parseExtension(filePath.toString()))) {
+                return status.get200();
+            }
+        }
+
+        return status.get400();
     }
 
     private String checkProtocolVersion(String protocol, StatusCodes status) {
@@ -85,5 +119,4 @@ public class RequestLine {
             return status.get400();
         }
     }
-
 }
