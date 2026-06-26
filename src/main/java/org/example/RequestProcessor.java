@@ -18,7 +18,7 @@ public class RequestProcessor {
 
         // all checks
         RequestLine requestLine = new RequestLine();
-        requestLine.checkRequestLine(request, uri, status, props);
+        String statusIs = requestLine.checkRequestLine(request, uri, status, props);
 
 
         return response;

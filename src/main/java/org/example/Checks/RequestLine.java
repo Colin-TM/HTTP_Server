@@ -27,6 +27,7 @@ public class RequestLine extends RequestProcessor {
         String docsRoot = props.get("DOCS_ROOT").toString();
         Path requestPath = Paths.get(uri.getPath());
         Path fullPath = Paths.get(docsRoot+requestPath);
+        System.out.println(fullPath);
 
         String uriCode = checkPathExists(fullPath, status);
         if (uriCode.equals(status.get404())) {
@@ -34,6 +35,10 @@ public class RequestLine extends RequestProcessor {
             if (!indexPath.isEmpty()) {
                 request.setAlteredUri(indexPath);
                 uriCode = status.get200();
+            }
+        } else { // check 200s for a directory
+            if (fullPath.toFile().isDirectory() && !fullPath.endsWith(File.separator)) {
+                uriCode = status.get404();
             }
         }
 
@@ -71,10 +76,10 @@ public class RequestLine extends RequestProcessor {
         }
     }
 
-    private String checkPathTraversal(Path filePath, StatusCodes status) {
+    //private String checkPathTraversal(Path filePath, StatusCodes status) {
         // continue here!
-        return "";
-    }
+        // return "";
+    //}
 
     private String checkPathExists(Path filePath, StatusCodes status) {
 
@@ -88,8 +93,8 @@ public class RequestLine extends RequestProcessor {
     private String checkIndexPath(Path filePath, StatusCodes status) {
 
         // check for index file
-        if (filePath.endsWith(File.separator)) {
-            filePath = Paths.get(filePath+File.separator+"index.html");
+        if (filePath.toFile().isDirectory() && filePath.endsWith(File.separator)) {
+            filePath = Paths.get(filePath+"index.html");
 
             if (filePath.toFile().exists()) {
                 return filePath.toString();
