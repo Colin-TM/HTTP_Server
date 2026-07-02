@@ -16,10 +16,12 @@ public class RequestProcessor {
         URI uri = getURI(request.getOriginalUri());
         Response response = createResponse();
 
-        // all checks
+        // all checks (processed chronologically by importance)
         RequestLine requestLine = new RequestLine();
         String statusIs = requestLine.checkRequestLine(request, uri, status, props);
 
+        MandatoryHeaders mandatoryHeaders = new MandatoryHeaders();
+        statusIs = mandatoryHeaders.checkMandatoryHeaders(request);
 
         return response;
     }
