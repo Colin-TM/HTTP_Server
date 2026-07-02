@@ -66,7 +66,7 @@ public class RequestProcessor {
     }
 
     protected String parseExtension(String filePath) {
-        int dotIndex = filePath.lastIndexOf(".");
+        int dotIndex = filePath.lastIndexOf(".") + 1;
         return filePath.substring(dotIndex);
     }
 

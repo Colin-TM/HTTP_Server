@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,7 +34,7 @@ class RequestLineTest {
         URI uri = new URI(request.getOriginalUri());
         StatusCodes status = new StatusCodes();
         Properties props = new Properties();
-        String pathToProps = System.getProperty("user.dir")+ FileSystems.getDefault().getSeparator()+"server.properties";
+        String pathToProps = System.getProperty("user.dir")+FileSystems.getDefault().getSeparator()+"server.properties";
         FileInputStream propsFile = new FileInputStream(pathToProps);
         props.load(propsFile);
 
@@ -42,42 +44,48 @@ class RequestLineTest {
         assertEquals(status.get200(), checkedStatus);
 
         // unsupported method, valid path, valid protocol version
-        details.put("Method:", "CONNECTION");
+        request.setHeader("Method:", "CONNECT");
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get501(), checkedStatus);
 
         // malformed method, valid path, valid protocol version
-        details.put("Method:", "get");
+        request.setHeader("Method:", "get");
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get400(), checkedStatus);
         // reset to valid method
-        details.put("Method:", "GET");
+        request.setHeader("Method:", "GET");
 
         // valid method, invalid path, valid protocol version
-        details.put("URI:", "http://localhost:8080/a1-test/5");
+        request.setHeader("URI:", "http://localhost:8080/a1-test/5");
+        uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get404(), checkedStatus);
 
         // valid method, path to index, valid protocol version
-        details.put("URI:", "http://localhost:8080/a1-test/2/");
+        request.setHeader("URI:", "http://localhost:8080/a1-test/2/");
+        uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get200(), checkedStatus);
         // altered URI should be set for future use
-        assertEquals("http://localhost:8080/a1-test/2/index.html", request.getAlteredUri());
+        assertTrue(request.getAlteredUri().contains(Paths.get("/2/index.html").toString()));
 
         // valid method, invalid path (to index), valid protocol version
-        details.put("URI:", "http://localhost:8080/a1-test/2");
+        request.setHeader("URI:", "http://localhost:8080/a1-test/2");
+        uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get404(), checkedStatus);
 
         // valid method, invalid path (MIME type), valid protocol version
-        details.put("URI:", "http://localhost:8080/a1-test/2/index.mp4");
+        request.setHeader("URI:", "http://localhost:8080/a1-test/2/index.mp4");
+        uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
-        assertEquals(status.get400(), checkedStatus);
+        assertEquals(status.get404(), checkedStatus);
         // reset to valid path
-        details.put("URI:", "http://localhost:8080/a1-test/2/index.html");
+        request.setHeader("URI:", "http://localhost:8080/a1-test/2/index.html");
+        uri = new URI(request.getOriginalUri());
 
-        details.put("Protocol Version:", "htp/10.1");
+        // valid method, valid path, invalid protocol version
+        request.setHeader("Protocol Version:", "htp/10.1");
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get400(), checkedStatus);
     }

@@ -7,9 +7,9 @@ import java.util.Map;
 
 public class Request {
 
-    private final String originalUri, httpMethod, protocolVersion;
+    private String originalUri, httpMethod, protocolVersion;
     private String alteredUri = "";
-    private final Map<String,String> headers;
+    private Map<String,String> headers;
 
     public Request(HashMap<String, String> details) {
         this.originalUri = details.get("URI:");
@@ -18,14 +18,15 @@ public class Request {
         this.headers = details;
     };
 
+    public void setHeader(String key, String val) { this.headers.put(key, val); }
     public void setAlteredUri(String newUri) { this.alteredUri = newUri; }
     public String getAlteredUri() { return this.alteredUri; }
     public String getOriginalUri() {
-        return this.originalUri;
+        return this.headers.get("URI:");
     }
     public String getHttpMethod() {
-        return this.httpMethod;
+        return this.headers.get("Method:");
     }
-    public String getProtocolVersion() { return this.protocolVersion; }
+    public String getProtocolVersion() { return this.headers.get("Protocol Version:"); }
     public Map<String,String> getHeaders() { return this.headers; }
 }

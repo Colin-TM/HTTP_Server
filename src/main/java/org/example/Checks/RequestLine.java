@@ -6,6 +6,7 @@ import org.example.StatusCodes;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -18,7 +19,6 @@ public class RequestLine extends RequestProcessor {
     public String checkRequestLine(Request request, URI uri, StatusCodes status, Properties props) {
         // request line component #1
         String methodCode = checkHttpMethod(request.getHttpMethod(), status);
-
         if (!methodCode.equals(status.get200())) {
             return methodCode; // 501 or 400
         }
@@ -26,13 +26,13 @@ public class RequestLine extends RequestProcessor {
         // request line component #2 (existing URI, valid MIME, non-aggressive file search)
         String docsRoot = props.get("DOCS_ROOT").toString();
         Path requestPath = Paths.get(uri.getPath());
-        Path fullPath = Paths.get(docsRoot+requestPath);
-        System.out.println(fullPath);
+        Path fullPath = Paths.get(System.getProperty("user.dir")+docsRoot+requestPath);
 
         String uriCode = checkPathExists(fullPath, status);
         if (uriCode.equals(status.get404())) {
-            String indexPath = checkIndexPath(fullPath, status);
+            String indexPath = checkIndexPath(uri, fullPath, status);
             if (!indexPath.isEmpty()) {
+                fullPath = Paths.get(indexPath);
                 request.setAlteredUri(indexPath);
                 uriCode = status.get200();
             }
@@ -76,6 +76,7 @@ public class RequestLine extends RequestProcessor {
         }
     }
 
+    // future thing to solve. will be tricky...
     //private String checkPathTraversal(Path filePath, StatusCodes status) {
         // continue here!
         // return "";
@@ -83,18 +84,21 @@ public class RequestLine extends RequestProcessor {
 
     private String checkPathExists(Path filePath, StatusCodes status) {
 
-        if (filePath.toFile().exists()) {
+        if (filePath.toFile().exists() && !filePath.toFile().isDirectory()) {
             return status.get200();
         }
 
         return status.get404();
     }
 
-    private String checkIndexPath(Path filePath, StatusCodes status) {
+    private String checkIndexPath(URI uri, Path filePath, StatusCodes status) {
 
+        System.out.println(filePath);
+        System.out.println(uri.toString());
         // check for index file
-        if (filePath.toFile().isDirectory() && filePath.endsWith(File.separator)) {
-            filePath = Paths.get(filePath+"index.html");
+        if (Files.isDirectory(filePath) && uri.toString().endsWith("/")) {
+            System.out.println("ok");
+            filePath = Paths.get(filePath+File.separator+"index.html");
 
             if (filePath.toFile().exists()) {
                 return filePath.toString();
