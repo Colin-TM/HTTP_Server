@@ -3,7 +3,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 
-public class Parser {
+public class RequestParser {
     /**
      * Checks the incoming request using the BufferedReader's readLine() method. The method only aims to validate the
      * request line and will return null if there are any issues.
@@ -89,7 +89,7 @@ public class Parser {
             // establish a length to read to and assure the provided is greater than 0
             int contentLength = Integer.parseInt(details.get("Content-Length:")) + 1;
             if (contentLength <= 0) {
-                System.out.println("[ Parser.java - Supplied Content Length is LESS than 0 ]");
+                System.err.println("[ Parser.java - Supplied Content Length is LESS than 0 ]");
             }
 
             StringBuilder bodyBuilder = new StringBuilder(contentLength);

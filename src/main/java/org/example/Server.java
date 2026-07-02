@@ -17,38 +17,44 @@ public class Server {
 
         while (true) {
 
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("Connected to (" + HOST + ", " + clientSocket.getPort() + ")");
+            Socket clientSocket = acceptConnection(serverSocket, HOST);
 
             try {
                 // server-client's 5-second timed connection
-                clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
+                //clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
 
+                StatusCodes status = new StatusCodes();
                 OutputStream serverWriter = clientSocket.getOutputStream();
                 BufferedReader clientReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
                 while (true) {
 
                     // parse the request for request line, headers, and body to form a request object
-                    HashMap<String, String> requestDetails = Parser.checkRequestLine(clientReader);
+                    HashMap<String, String> requestDetails = RequestParser.checkRequestLine(clientReader);
                     if (requestDetails.isEmpty()) {
-                        System.out.println("[ Server.java - requestDetails is empty ]");
+                        System.err.println("[ Server.java - requestDetails is empty ]");
                         break;
                     }
-                    Request request = Parser.parseRequest(clientReader, requestDetails);
+                    Request request = RequestParser.parseRequest(clientReader, requestDetails);
 
                     // check for a complete request initialization
                     if (request.getHttpMethod().isEmpty() ||
-                            request.getOriginalURI().isEmpty() ||
+                            request.getOriginalUri().isEmpty() ||
                             request.getProtocolVersion().isEmpty() ||
                             request.getHeaders().isEmpty()) {
 
-                        System.out.println("[ Server.java - requestInfo is null ]");
+                        System.err.println("[ Server.java - requestInfo is null ]");
                         break;
                     }
 
-                    // Create a coordinator class to begin response creation...
+                    // exists to coordinate the response creation process
+                    RequestProcessor processor = new RequestProcessor();
+                    Response response = processor.process(request, status, props);
+
+                    break; // to be removed
                 }
+                break; // to be removed
+
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
                 // create new response object for a timed out response
@@ -72,5 +78,11 @@ public class Server {
                 "Listening on " + HOST +
                 ":" + PORT + " for HTTP connections..."
         );
+    }
+
+    private static Socket acceptConnection(ServerSocket serverSocket, String HOST) throws IOException {
+        Socket clientSocket = serverSocket.accept();
+        System.out.println("Connected to (" + HOST + ", " + clientSocket.getPort() + ")");
+        return clientSocket;
     }
 }
