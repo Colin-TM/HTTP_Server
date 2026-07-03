@@ -6,6 +6,9 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 public class RequestProcessor {
 
@@ -26,7 +29,7 @@ public class RequestProcessor {
         return response;
     }
 
-    public URI getURI(String requestUri) {
+    private URI getURI(String requestUri) {
         try {
             return new URI(requestUri);
         } catch (URISyntaxException e) {
@@ -51,7 +54,7 @@ public class RequestProcessor {
         return mimes;
     }
 
-    public ArrayList<String> getFileExtensions() {
+    protected ArrayList<String> getFileExtensions() {
         ArrayList<String> extensions = new ArrayList<>();
         extensions.add("octet-stream");
         extensions.add("gif");
@@ -70,6 +73,20 @@ public class RequestProcessor {
     protected String parseExtension(String filePath) {
         int dotIndex = filePath.lastIndexOf(".") + 1;
         return filePath.substring(dotIndex);
+    }
+
+    protected String generateEtag(byte[] resource) {
+        String etag = "";
+        try {
+            MessageDigest computeMD5 = MessageDigest.getInstance("MD5");
+            byte[] etagInBytes = computeMD5.digest(resource);
+            etag = "\"" + HexFormat.of().formatHex(etagInBytes) + "\"";
+        } catch (NoSuchAlgorithmException e) {
+            //throw new RuntimeException(e);
+            return "500 Internal Server Error";
+        }
+
+        return etag;
     }
 
     private Response createResponse() {
