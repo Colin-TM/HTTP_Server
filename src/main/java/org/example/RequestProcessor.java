@@ -1,29 +1,75 @@
 package org.example;
 
 import org.example.Checks.*;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Properties;
 
 public class RequestProcessor {
 
+    Path filePath;
+    String etag;
     public RequestProcessor() {}
 
     public Response process(Request request, StatusCodes status, Properties props) {
         // will need URI as an object throughout the process
         URI uri = getURI(request.getOriginalUri());
         Response response = createResponse();
+        HashMap<String, String> responseHeaders = response.getHeaderMap();
 
         // all checks (processed chronologically by importance)
         RequestLine requestLine = new RequestLine();
         String statusIs = requestLine.checkRequestLine(request, uri, status, props);
 
+        if (statusIs.equals(status.get200())) {
+            setFilePath(requestLine.getFilePath());
+            responseHeaders.put("Content-Type", requestLine.getMimeType());
+            responseHeaders.put("Content-Length", String.valueOf(getFilePath().toFile().length()));
+            responseHeaders.put("Last-Modified", getLastModified(this.getFilePath()));
+        }
+
         MandatoryHeaders mandatoryHeaders = new MandatoryHeaders();
         statusIs = mandatoryHeaders.checkMandatoryHeaders(request);
 
+        setEtag(status);
+
+
         return response;
+    }
+
+    private void setEtag(StatusCodes status) {
+        try {
+            if (generateEtag(Files.readAllBytes(getFilePath())).equals(status.get500())) {
+                this.etag = generateEtag(Files.readAllBytes(getFilePath()));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setFilePath(Path fullPath) {
+        this.filePath = fullPath;
+    }
+
+    public Path getFilePath() {
+        return this.filePath;
+    }
+
+    public String getEtag() {
+        return this.etag;
     }
 
     public URI getURI(String requestUri) {
@@ -70,6 +116,33 @@ public class RequestProcessor {
     protected String parseExtension(String filePath) {
         int dotIndex = filePath.lastIndexOf(".") + 1;
         return filePath.substring(dotIndex);
+    }
+
+    private String getLastModified(Path filePath) {
+        FileTime fileTime = null;
+        try {
+            fileTime = Files.getLastModifiedTime(filePath);
+        } catch (IOException e) {
+            //throw new RuntimeException(e);
+            System.err.println("[ RequestProcessor - Conversion to RFC Date-Time failed ]");
+        }
+        DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'");
+        assert fileTime != null;
+        return fileTime.toInstant().atZone(ZoneOffset.UTC).format(dateTimeFormat);
+    }
+
+    protected String generateEtag(byte[] resource) {
+        String etag = "";
+        try {
+            MessageDigest computeMD5 = MessageDigest.getInstance("MD5");
+            byte[] etagInBytes = computeMD5.digest(resource);
+            etag = "\"" + HexFormat.of().formatHex(etagInBytes) + "\"";
+        } catch (NoSuchAlgorithmException e) {
+            //throw new RuntimeException(e);
+            return "500 Internal Server Error";
+        }
+
+        return etag;
     }
 
     private Response createResponse() {

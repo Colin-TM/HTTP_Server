@@ -14,6 +14,8 @@ import java.util.Properties;
 
 public class RequestLine extends RequestProcessor {
 
+    private String mimeType = "";
+    private Path filePath = null;
     public RequestLine() {}
 
     public String checkRequestLine(Request request, URI uri, StatusCodes status, Properties props) {
@@ -32,11 +34,11 @@ public class RequestLine extends RequestProcessor {
         if (uriCode.equals(status.get404())) {
             String indexPath = checkIndexPath(uri, fullPath, status);
             if (!indexPath.isEmpty()) {
-                fullPath = Paths.get(indexPath);
-                request.setAlteredUri(indexPath);
+                this.filePath = Paths.get(indexPath);
                 uriCode = status.get200();
             }
         } else { // check 200s for a directory
+            this.filePath = fullPath;
             if (fullPath.toFile().isDirectory() && !fullPath.endsWith(File.separator)) {
                 uriCode = status.get404();
             }
@@ -62,6 +64,14 @@ public class RequestLine extends RequestProcessor {
         return status.get200();
     }
 
+    public String getMimeType() {
+        return this.mimeType;
+    }
+
+    public Path getFilePath() {
+        return this.filePath;
+    }
+
     private String checkHttpMethod(String httpMethod, StatusCodes status) {
 
         switch (httpMethod) {
@@ -75,12 +85,6 @@ public class RequestLine extends RequestProcessor {
                 return status.get400();
         }
     }
-
-    // future thing to solve. will be tricky...
-    //private String checkPathTraversal(Path filePath, StatusCodes status) {
-        // continue here!
-        // return "";
-    //}
 
     private String checkPathExists(Path filePath, StatusCodes status) {
 
@@ -113,6 +117,7 @@ public class RequestLine extends RequestProcessor {
         ArrayList<String> extensions = getFileExtensions();
         for (String extension : extensions) {
             if (extension.equals(parseExtension(filePath.toString()))) {
+                this.mimeType = extension;
                 return status.get200();
             }
         }
