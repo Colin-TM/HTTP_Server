@@ -25,7 +25,7 @@ public class RequestProcessor {
     public RequestProcessor() {}
 
     public Response process(Request request, StatusCodes status, Properties props) {
-        // will need URI as an object throughout the process
+
         URI uri = getURI(request.getOriginalUri());
         Response response = createResponse();
         HashMap<String, String> responseHeaders = response.getHeaderMap();
@@ -45,7 +45,8 @@ public class RequestProcessor {
         statusIs = mandatoryHeaders.checkMandatoryHeaders(request);
 
         setEtag(status);
-
+        Preconditions preconditions = new Preconditions();
+        statusIs = preconditions.checkPreconditions(request, getEtag(), responseHeaders.get("Last-Modified:"));
 
         return response;
     }
