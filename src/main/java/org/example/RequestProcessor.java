@@ -11,7 +11,6 @@ import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,13 +50,14 @@ public class RequestProcessor {
         return response;
     }
 
-    private void setEtag(StatusCodes status) {
+    public void setEtag(StatusCodes status) {
         try {
-            if (generateEtag(Files.readAllBytes(getFilePath())).equals(status.get500())) {
+            if (!generateEtag(Files.readAllBytes(getFilePath())).equals(status.get500())) {
                 this.etag = generateEtag(Files.readAllBytes(getFilePath()));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            //throw new RuntimeException(e);
+            System.err.println("[ RequestProcessor - Failed to generate Etag ]");
         }
     }
 
@@ -119,7 +119,7 @@ public class RequestProcessor {
         return filePath.substring(dotIndex);
     }
 
-    private String getLastModified(Path filePath) {
+    public String getLastModified(Path filePath) {
         FileTime fileTime = null;
         try {
             fileTime = Files.getLastModifiedTime(filePath);

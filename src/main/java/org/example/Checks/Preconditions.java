@@ -42,7 +42,7 @@ public class Preconditions {
         return "412 Precondition Failed";
     }
 
-    public String checkIfUnmodified(String headerValue, String lastModified) {
+    public String checkIfUnmodified(String headerValue, String lastModified) { // FIX
         if (!headerValue.equals(lastModified)) {
             return "200 OK";
         }
@@ -60,7 +60,7 @@ public class Preconditions {
         return "412 Precondition Failed";
     }
 
-    public String checkIfModified(String headerValue, String lastModified) {
+    public String checkIfModified(String headerValue, String lastModified) { // FIX
         if (headerValue.equals(lastModified)) {
             return "200 OK";
         }
