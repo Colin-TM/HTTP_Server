@@ -35,15 +35,19 @@ public class RequestProcessor {
 
         if (statusIs.equals(status.get200())) {
             setFilePath(requestLine.getFilePath());
-            responseHeaders.put("Content-Type", requestLine.getMimeType());
-            responseHeaders.put("Content-Length", String.valueOf(getFilePath().toFile().length()));
-            responseHeaders.put("Last-Modified", getLastModified(this.getFilePath()));
+            response.setHeader("Content-Type", requestLine.getMimeType());
+            response.setHeader("Content-Length", String.valueOf(getFilePath().toFile().length()));
+            response.setHeader("Last-Modified", getLastModified(this.getFilePath()));
         }
 
         MandatoryHeaders mandatoryHeaders = new MandatoryHeaders();
         statusIs = mandatoryHeaders.checkMandatoryHeaders(request);
+        if (statusIs.equals(status.get200())) {
+            response.setHeader("Connection", request.getHeader("Connection:"));
+        }
 
         setEtag(status);
+        response.setHeader("ETag", getEtag());
         Preconditions preconditions = new Preconditions();
         statusIs = preconditions.checkPreconditions(request, getEtag(), responseHeaders.get("Last-Modified:"));
 

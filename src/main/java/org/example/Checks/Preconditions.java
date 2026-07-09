@@ -1,8 +1,13 @@
 package org.example.Checks;
 
 import org.example.Request;
+import org.example.RequestProcessor;
 
-public class Preconditions {
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class Preconditions extends RequestProcessor {
 
     public Preconditions() {}
 
@@ -42,8 +47,10 @@ public class Preconditions {
         return "412 Precondition Failed";
     }
 
-    public String checkIfUnmodified(String headerValue, String lastModified) { // FIX
-        if (!headerValue.equals(lastModified)) {
+    public String checkIfUnmodified(String headerValue, String lastModified) {
+        Instant headerDate = ZonedDateTime.parse(headerValue, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        Instant fileDate = ZonedDateTime.parse(lastModified, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        if (!fileDate.isAfter(headerDate)) {
             return "200 OK";
         }
 
@@ -60,8 +67,10 @@ public class Preconditions {
         return "412 Precondition Failed";
     }
 
-    public String checkIfModified(String headerValue, String lastModified) { // FIX
-        if (headerValue.equals(lastModified)) {
+    public String checkIfModified(String headerValue, String lastModified) {
+        Instant headerDate = ZonedDateTime.parse(headerValue, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        Instant fileDate = ZonedDateTime.parse(lastModified, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        if (!fileDate.isBefore(headerDate)) {
             return "200 OK";
         }
 

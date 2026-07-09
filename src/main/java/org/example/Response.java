@@ -24,7 +24,7 @@ public class Response {
      * for the most part
      */
     public void setDefaultHeaders() {
-        // Assign. #1
+        // Assign. #1 - GATHERED
         this.headers.put("Server", "ScratchServer (Version 1)");
         this.headers.put("Date", getDateTime());
         this.headers.put("Last-Modified", "");
