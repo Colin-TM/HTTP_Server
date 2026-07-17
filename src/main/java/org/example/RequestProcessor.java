@@ -45,10 +45,9 @@ public class RequestProcessor {
             }
         } else if (statusIs.equals(status.get301())) {
             // Location header must be set here
+            response.setHeader("Location", request.getAlteredUri());
             // HTML page must be generated & path must be set here
-            response.setStatus(status.get302());
-        } else {
-
+            response.setStatus(status.get301());
         }
 
         MandatoryHeaders mandatoryHeaders = new MandatoryHeaders();
@@ -62,6 +61,10 @@ public class RequestProcessor {
         Preconditions preconditions = new Preconditions();
         statusIs = preconditions.checkPreconditions(request, getEtag(), responseHeaders.get("Last-Modified:"));
         // return a response object for non-200 status codes here after preconditions check
+
+        // partial content checks here!
+        PartialContent partialContent = new PartialContent();
+        statusIs = partialContent.checkPartialContent(request);
 
         // 302s do not return automatically, so must check
         if (!response.getStatus().equals(status.get301())) {

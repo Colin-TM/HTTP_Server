@@ -86,6 +86,6 @@ class RequestLineTest {
         // valid method, valid path, invalid protocol version
         request.setHeader("Protocol Version:", "htp/10.1");
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
-        assertEquals(status.get400(), checkedStatus);
+        assertEquals(status.get505(), checkedStatus);
     }
 }

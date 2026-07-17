@@ -46,7 +46,6 @@ public class RequestLine extends RequestProcessor {
                         Path sysPath = Paths.get(System.getProperty("user.dir")+docsRoot);
                         Path indPath = Paths.get(indexPath);
                         request.setAlteredUri(Paths.get("/" + sysPath.relativize(indPath)).toString());
-                        System.out.println(request.getAlteredUri());
                         uriCode = status.get301();
                     }
                 }
@@ -136,7 +135,7 @@ public class RequestLine extends RequestProcessor {
         if (protocol.equals("HTTP/1.1")) {
             return status.get200();
         } else {
-            return status.get400();
+            return status.get505();
         }
     }
 }
