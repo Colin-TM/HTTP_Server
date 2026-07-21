@@ -64,7 +64,7 @@ public class RequestProcessor {
 
         // partial content checks here!
         PartialContent partialContent = new PartialContent();
-        statusIs = partialContent.checkPartialContent(request);
+        statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")));
 
         // 302s do not return automatically, so must check
         if (!response.getStatus().equals(status.get301())) {
