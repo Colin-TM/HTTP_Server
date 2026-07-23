@@ -36,20 +36,22 @@ public class PartialContent extends RequestProcessor {
         return "200 OK";
     }
 
-    private int[] parseRange(Request request, int contentLength) {
-        String[] vals = request.getHeader("Range:").substring(6).split("-");
+    protected int[] parseRange(Request request, int contentLength) { // not including multipart range requests
+        String rangeHeader = request.getHeader("Range:").substring(6);
+        String[] vals = rangeHeader.split("-");
         int[] range = new int[2];
 
         try {
-            if (vals[1].isEmpty() || Integer.parseInt(vals[1]) > contentLength) {
+            if (rangeHeader.endsWith("-")) { // X amount of the final bytes of file (e.g. "500-" == "500-MAX")
                 range[1] = contentLength - 1;
                 setRangeAdjusted(true);
             } else {
                 range[1] = Integer.parseInt(vals[1]);
             }
 
-            if (vals[0].isEmpty()) {
-                range[0] = contentLength - Integer.parseInt(vals[1]);
+            if (rangeHeader.indexOf("-") == 0) { // X amount of the final bytes of file (e.g. "-500" == "(MAX-500)-MAX")
+                range[0] = contentLength - Integer.parseInt(rangeHeader.substring(1));
+                range[1] = contentLength - 1;
                 setRangeAdjusted(true);
             } else {
                 range[0] = Integer.parseInt(vals[0]);
@@ -61,7 +63,7 @@ public class PartialContent extends RequestProcessor {
         return range;
     }
 
-    private String checkInRange(int[] range, int contentLength) {
+    protected String checkInRange(int[] range, int contentLength) {
         if (range[0] > contentLength || range[1] > contentLength) {
             return "416 Requested Range Not Satisfiable";
         }
@@ -69,7 +71,7 @@ public class PartialContent extends RequestProcessor {
         return "206 Partial Content";
     }
 
-    private String checkIfRange(String ifRange, String lastModified) {
+    protected String checkIfRange(String ifRange, String lastModified) {
         Instant headerDate = ZonedDateTime.parse(ifRange, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
         Instant fileDate = ZonedDateTime.parse(lastModified, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
         if (!fileDate.isAfter(headerDate)) {

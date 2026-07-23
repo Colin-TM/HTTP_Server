@@ -66,7 +66,6 @@ public class RequestProcessor {
         statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")), responseHeaders.get("Last-Modified"));
 
 
-
         // 301s do not return automatically, so must check
         if (!response.getStatus().equals(status.get301())) {
             response.setStatus(statusIs);
