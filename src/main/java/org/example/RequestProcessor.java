@@ -62,15 +62,17 @@ public class RequestProcessor {
         statusIs = preconditions.checkPreconditions(request, getEtag(), responseHeaders.get("Last-Modified:"));
         // return a response object for non-200 status codes here after preconditions check
 
-        // partial content checks here!
         PartialContent partialContent = new PartialContent();
-        statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")));
+        statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")), responseHeaders.get("Last-Modified"));
 
-        // 302s do not return automatically, so must check
+
+
+        // 301s do not return automatically, so must check
         if (!response.getStatus().equals(status.get301())) {
             response.setStatus(statusIs);
             response.setHeader("Location", "");
         }
+
         return response;
     }
 

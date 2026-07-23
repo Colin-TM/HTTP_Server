@@ -3,13 +3,35 @@ package org.example.Checks;
 import org.example.Request;
 import org.example.RequestProcessor;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class PartialContent extends RequestProcessor {
 
     private boolean rangeAdjusted = false;
     public PartialContent() {}
 
-    public String checkPartialContent(Request request, int contentLength) {
-        int[] range = parseRange(request, contentLength);
+    public String checkPartialContent(Request request, int contentLength, String lastModified) {
+
+        if (!request.getHeader("Range:").isEmpty()) {
+            int[] range = parseRange(request, contentLength);
+            if (range[0] == -1) {
+                return "500 Internal Server Error";
+            }
+
+            String status = checkInRange(range, contentLength);
+            if (status.equals("416 Requested Range Not Satisfiable")) {
+                return status;
+            }
+
+            status = checkIfRange(request.getHeader("If-Range:"), lastModified);
+            if (status.equals("412 Precondition Failed")) {
+                return status;
+            }
+
+            return "206 Partial Content";
+        }
 
         return "200 OK";
     }
@@ -33,20 +55,28 @@ public class PartialContent extends RequestProcessor {
                 range[0] = Integer.parseInt(vals[0]);
             }
         } catch (NumberFormatException e) {
-            return new int[]{0, 0};
+            return new int[]{-1, -1};
         }
 
         return range;
     }
 
-    private boolean checkIsInt(String[] range, int contentLength) {
-        // may not need?
-        return true;
+    private String checkInRange(int[] range, int contentLength) {
+        if (range[0] > contentLength || range[1] > contentLength) {
+            return "416 Requested Range Not Satisfiable";
+        }
+
+        return "206 Partial Content";
     }
 
-    private boolean checkInRange() {
-        // may not need?
-        return true;
+    private String checkIfRange(String ifRange, String lastModified) {
+        Instant headerDate = ZonedDateTime.parse(ifRange, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        Instant fileDate = ZonedDateTime.parse(lastModified, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        if (!fileDate.isAfter(headerDate)) {
+            return "206 Partial Content";
+        }
+
+        return "412 Precondition Failed";
     }
 
     public void setRangeAdjusted(boolean to) {
