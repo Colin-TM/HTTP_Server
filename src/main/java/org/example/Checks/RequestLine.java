@@ -5,6 +5,7 @@ import org.example.RequestProcessor;
 import org.example.StatusCodes;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +15,7 @@ import java.util.Properties;
 
 public class RequestLine extends RequestProcessor {
 
-    private String mimeType = "";
+    private String fileExtension = "";
     private Path filePath = null;
     public RequestLine() {}
 
@@ -34,13 +35,20 @@ public class RequestLine extends RequestProcessor {
         if (uriCode.equals(status.get404())) {
             String indexPath = checkIndexPath(uri, fullPath, status);
             if (!indexPath.isEmpty()) {
-                this.filePath = Paths.get(indexPath);
+                fullPath = Paths.get(indexPath);
+                this.filePath = fullPath;
                 uriCode = status.get200();
-            }
-        } else { // check 200s for a directory
-            this.filePath = fullPath;
-            if (fullPath.toFile().isDirectory() && !fullPath.endsWith(File.separator)) {
-                uriCode = status.get404();
+            } else {
+                this.filePath = fullPath;
+                if (fullPath.toFile().isDirectory() && !fullPath.endsWith(File.separator)) {
+                    indexPath = checkIndexPath(URI.create(uri+"/"), fullPath, status);
+                    if (!indexPath.isEmpty()) {
+                        Path sysPath = Paths.get(System.getProperty("user.dir")+docsRoot);
+                        Path indPath = Paths.get(indexPath);
+                        request.setAlteredUri(Paths.get("/" + sysPath.relativize(indPath)).toString());
+                        uriCode = status.get301();
+                    }
+                }
             }
         }
 
@@ -55,17 +63,19 @@ public class RequestLine extends RequestProcessor {
 
         // request line component #3
         String protocolCode = checkProtocolVersion(request.getProtocolVersion(), status);
-
         if (!protocolCode.equals(status.get200())) {
             return protocolCode;
         }
 
-        // all checks passed
-        return status.get200();
+        if (uriCode.equals(status.get301())) {
+            return uriCode;
+        } else {
+            return status.get200();
+        }
     }
 
-    public String getMimeType() {
-        return this.mimeType;
+    public String getFileExtension() {
+        return this.fileExtension;
     }
 
     public Path getFilePath() {
@@ -97,13 +107,9 @@ public class RequestLine extends RequestProcessor {
 
     private String checkIndexPath(URI uri, Path filePath, StatusCodes status) {
 
-        System.out.println(filePath);
-        System.out.println(uri.toString());
         // check for index file
         if (Files.isDirectory(filePath) && uri.toString().endsWith("/")) {
-            System.out.println("ok");
             filePath = Paths.get(filePath+File.separator+"index.html");
-
             if (filePath.toFile().exists()) {
                 return filePath.toString();
             }
@@ -117,7 +123,7 @@ public class RequestLine extends RequestProcessor {
         ArrayList<String> extensions = getFileExtensions();
         for (String extension : extensions) {
             if (extension.equals(parseExtension(filePath.toString()))) {
-                this.mimeType = extension;
+                this.fileExtension = extension;
                 return status.get200();
             }
         }
@@ -126,11 +132,10 @@ public class RequestLine extends RequestProcessor {
     }
 
     private String checkProtocolVersion(String protocol, StatusCodes status) {
-
         if (protocol.equals("HTTP/1.1")) {
             return status.get200();
         } else {
-            return status.get400();
+            return status.get505();
         }
     }
 }

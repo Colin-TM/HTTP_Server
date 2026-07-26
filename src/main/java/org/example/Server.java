@@ -21,7 +21,7 @@ public class Server {
 
             try {
                 // server-client's 5-second timed connection
-                //clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
+                clientSocket.setSoTimeout(Integer.parseInt(props.getProperty("TIMEOUT")) * 1000);
 
                 StatusCodes status = new StatusCodes();
                 OutputStream serverWriter = clientSocket.getOutputStream();

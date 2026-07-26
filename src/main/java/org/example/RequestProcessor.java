@@ -2,6 +2,8 @@ package org.example;
 
 import org.example.Checks.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -35,9 +37,17 @@ public class RequestProcessor {
 
         if (statusIs.equals(status.get200())) {
             setFilePath(requestLine.getFilePath());
-            response.setHeader("Content-Type", requestLine.getMimeType());
+            response.setHeader("Content-Type", findMime(requestLine.getFileExtension()));
             response.setHeader("Content-Length", String.valueOf(getFilePath().toFile().length()));
             response.setHeader("Last-Modified", getLastModified(this.getFilePath()));
+            if (!request.getAlteredUri().isEmpty()) {
+                response.setHeader("Location", request.getAlteredUri());
+            }
+        } else if (statusIs.equals(status.get301())) {
+            // Location header must be set here
+            response.setHeader("Location", request.getAlteredUri());
+            // HTML page must be generated & path must be set here
+            response.setStatus(status.get301());
         }
 
         MandatoryHeaders mandatoryHeaders = new MandatoryHeaders();
@@ -50,6 +60,18 @@ public class RequestProcessor {
         response.setHeader("ETag", getEtag());
         Preconditions preconditions = new Preconditions();
         statusIs = preconditions.checkPreconditions(request, getEtag(), responseHeaders.get("Last-Modified:"));
+        // return a response object for non-200 status codes here after preconditions check
+
+        PartialContent partialContent = new PartialContent();
+        statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")), responseHeaders.get("Last-Modified"));
+        // return response object for non-200 status codes here after partial content check
+
+
+        // 301s do not return automatically, so must check
+        if (!response.getStatus().equals(status.get301())) {
+            response.setStatus(statusIs);
+            response.setHeader("Location", "");
+        }
 
         return response;
     }
@@ -86,7 +108,7 @@ public class RequestProcessor {
         }
     }
 
-    public HashMap<String, String> getMimeMap() {
+    public String findMime(String fileExtension) {
         HashMap<String, String> mimes = new HashMap<>();
         mimes.put("octet-stream", "application/octet-stream");
         mimes.put("gif", "image/gif");
@@ -99,7 +121,12 @@ public class RequestProcessor {
         mimes.put("ppt", "application/vnd.ms-powerpoint");
         mimes.put("word", "application/vnd.ms-word");
         mimes.put("xml", "text/xml");
-        return mimes;
+
+        if (mimes.containsKey(fileExtension)) {
+            return mimes.get(fileExtension);
+        } else {
+            return mimes.get("octet-stream");
+        }
     }
 
     protected ArrayList<String> getFileExtensions() {
@@ -148,6 +175,31 @@ public class RequestProcessor {
         }
 
         return etag;
+    }
+
+    public String generateHtmlContent(String status, String message) {
+        return String.format(
+                """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>%s</title>
+                </head>
+                <body>
+                    <h3>%s</h3>
+                    <p>%s</p>
+                </body>
+                </html>
+                """, status, status, message);
+    }
+
+    public void generateHtmlPage(String fileName, String htmlContent) {
+        try (FileWriter fileWriter = new FileWriter(fileName); BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+            bufferedWriter.write(htmlContent);
+        } catch (IOException e) {
+            System.err.println("[ RequestProcessor - Failed to generate HTML page ]");
+        }
     }
 
     private Response createResponse() {

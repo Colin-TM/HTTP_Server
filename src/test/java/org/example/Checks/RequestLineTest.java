@@ -23,7 +23,6 @@ class RequestLineTest {
 
     @Test
     void checkRequestLine() throws URISyntaxException, IOException {
-        String SLASH = File.separator;
         HashMap<String, String> details = new HashMap<>();
         details.put("Method:", "GET");
         details.put("URI:", "http://localhost:8080/a1-test/2/index.html");
@@ -66,14 +65,14 @@ class RequestLineTest {
         uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
         assertEquals(status.get200(), checkedStatus);
-        // altered URI should be set for future use
-        assertTrue(request.getAlteredUri().contains(Paths.get("/2/index.html").toString()));
 
         // valid method, invalid path (to index), valid protocol version
         request.setHeader("URI:", "http://localhost:8080/a1-test/2");
         uri = new URI(request.getOriginalUri());
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
-        assertEquals(status.get404(), checkedStatus);
+        assertEquals(status.get301(), checkedStatus);
+        // altered URI should be set for "Location:" header
+        assertEquals(Paths.get("/a1-test/2/index.html").toString(), request.getAlteredUri());
 
         // valid method, invalid path (MIME type), valid protocol version
         request.setHeader("URI:", "http://localhost:8080/a1-test/2/index.mp4");
@@ -87,6 +86,6 @@ class RequestLineTest {
         // valid method, valid path, invalid protocol version
         request.setHeader("Protocol Version:", "htp/10.1");
         checkedStatus = checker.checkRequestLine(request, uri, status, props);
-        assertEquals(status.get400(), checkedStatus);
+        assertEquals(status.get505(), checkedStatus);
     }
 }
