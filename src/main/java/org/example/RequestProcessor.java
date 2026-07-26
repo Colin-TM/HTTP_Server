@@ -64,6 +64,7 @@ public class RequestProcessor {
 
         PartialContent partialContent = new PartialContent();
         statusIs = partialContent.checkPartialContent(request, Integer.parseInt(responseHeaders.get("Content-Length")), responseHeaders.get("Last-Modified"));
+        // return response object for non-200 status codes here after partial content check
 
 
         // 301s do not return automatically, so must check
