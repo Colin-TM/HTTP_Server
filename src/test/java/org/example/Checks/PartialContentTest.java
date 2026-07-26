@@ -41,7 +41,21 @@ class PartialContentTest {
 
     @Test
     void checkPartialContent() {
-        // to complete...
+        // valid request (206 Partial Content)
+        assertEquals(status.get206(), checker.checkPartialContent(request, contentLength, lastModified));
+        // set "Range:" to 0 and test for 200
+        request.setHeader("Range:", "");
+        assertEquals(status.get200(), checker.checkPartialContent(request, contentLength, lastModified));
+        // invalid range
+        request.setHeader("Range:", "bytesss=NOT_Valid");
+        assertEquals(status.get500(), checker.checkPartialContent(request, contentLength, lastModified));
+        // invalid range integers
+        request.setHeader("Range:", "bytes=2000-2112");
+        assertEquals(status.get416(), checker.checkPartialContent(request, contentLength, lastModified));
+        // invalid "If-Range" date-time
+        request.setHeader("Range:", "bytes=0-59");
+        request.setHeader("If-Range:", "Sat, 20 Oct 2018 02:33:20 GMT");
+        assertEquals(status.get412(), checker.checkPartialContent(request, contentLength, lastModified));
     }
 
     @Test

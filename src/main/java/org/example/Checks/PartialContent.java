@@ -37,6 +37,10 @@ public class PartialContent extends RequestProcessor {
     }
 
     protected int[] parseRange(Request request, int contentLength) { // not including multipart range requests
+        if (!request.getHeader("Range:").startsWith("bytes=")) {
+            return new int[]{-1, -1};
+        }
+
         String rangeHeader = request.getHeader("Range:").substring(6);
         String[] vals = rangeHeader.split("-");
         int[] range = new int[2];
