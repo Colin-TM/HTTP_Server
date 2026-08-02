@@ -3,19 +3,18 @@ package org.example.Checks;
 import org.example.Request;
 import org.example.RequestProcessor;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 public class Negotiation extends RequestProcessor {
 
     public Negotiation() {}
 
     public String checkNegotiation(Request request, Properties props) {
-
-
-
+        // run through checks similarly to ResponseHandler.java using findPreferredFile()...
         return "200 OK";
     }
 
@@ -40,7 +39,8 @@ public class Negotiation extends RequestProcessor {
     }
 
     /**
-     * Using the "Accept:" header's preference map, the method will return the highest rated matched file.
+     * Using the headers pertaining to "Accept" and "Negotiation", will return a filename with the highest match or
+     * a status code for errors.
      * @return - matched file
      */
     public String findPreferredFile(Request request, String fileName, String acceptType, Properties props) {
@@ -59,8 +59,6 @@ public class Negotiation extends RequestProcessor {
             preferences = getPreferences(request.getHeader("Accept-Language:"));
         } else if (acceptType.equals("Charset")) {
             preferences = getPreferences(request.getHeader("Accept-Charset:"));
-        } else {
-            return "500 Internal Server Error";
         }
 
         // in-case of negotiate being filled and accept being empty
@@ -74,9 +72,128 @@ public class Negotiation extends RequestProcessor {
         keys.removeIf(key -> !props.containsValue(key));
 
         // check existence when filename is appended, save valid names
-        
+        Iterator<String> iter = keys.iterator();
+        checkFileExists(props, fileName, iter);
 
-        return "";
+        // account for language
+        if (preferences.isEmpty()) {
+            preferences.put("Negotiate-Language", 1.0);
+            preferences = associateStar(preferences, props);
+            iter = keys.iterator();
+            checkFileExists(props, fileName, iter);
+        }
+
+        // remove from preferences during loop of finding greatest q-value(s)
+        int counter = 0;
+        while (counter <= preferences.size()) {
+
+            counter++;
+            LinkedList<Double> qVals = new LinkedList<>(preferences.values());
+
+            // Find the maximum value, get its index and remove, then read to first index
+            double maxVal = Collections.max(qVals);
+            int indexOfMax = qVals.indexOf(maxVal);
+            qVals.remove(indexOfMax);
+            qVals.addFirst(maxVal);
+
+            if (Double.compare(maxVal, 0.0) == 0) { // if all vals are 0, there is no point in continuing
+                return "406";
+            }
+
+            for (int i = 0; i < qVals.size(); i++) {
+
+                if (qVals.size() <= (i + 1)) { // check limit
+                    break;
+                }
+
+                double next = qVals.get(i + 1);
+                if (Double.compare(maxVal, next) > 0 || Double.compare(next, 0.0) == 0) { // next is less than maxVal or 0
+                    iter = keys.iterator();
+                    while (iter.hasNext()) {
+                        String key = iter.next();
+                        if (Double.compare(preferences.get(key), next) == 0) {
+                            iter.remove();
+                            break;
+                        }
+                    }
+                    qVals.remove(next);
+                } else if (Double.compare(maxVal, next) == 0) { // equal to max value
+                    break;
+                }
+            }
+        }
+
+        iter = keys.iterator();
+        if (preferences.isEmpty()) {
+            return "406";
+        } else if (preferences.size() > 1) {
+
+            List<String> lastMimes = keys.stream().toList();
+            List<String> foundCurrently = new LinkedList<>();
+            StringBuilder allFound = new StringBuilder();
+
+            for (String propKey : props.stringPropertyNames()) {
+                for (String lastMime : lastMimes) {
+                    if (props.getProperty(propKey).equals(lastMime)) {
+                        String ext = "." + propKey;
+                        String foundThis = fileName + ext;
+
+                        if (!(foundCurrently.contains(foundThis))) {
+                            foundCurrently.add(foundThis);
+                        }
+                    }
+                }
+            }
+
+            for (String s : foundCurrently) {
+                allFound.append(s).append(" ");
+            }
+            return allFound.toString();
+        } else {
+
+            String lastMime = keys.stream().toList().getFirst();
+            for (String propKey : props.stringPropertyNames()) {
+                if (props.getProperty(propKey).equals(lastMime)) {
+                    String ext = "." + propKey;
+                    fileName = (fileName + ext);
+
+                    try {
+                        URI forPath = new URI(fileName);
+                        Path testThisPath = Paths.get(
+                                System.getProperty("user.dir"),
+                                props.getProperty("DOCS_ROOT"),
+                                forPath.toString());
+                        if (!(testThisPath.toFile().exists())) {
+                            return "406";
+                        }
+                    } catch (URISyntaxException e) {
+                        System.err.println("Conversion to URI failed.");
+                        return "406";
+                    }
+                }
+            }
+        }
+
+        return fileName;
+    }
+
+    private void checkFileExists(Properties props, String fileName, Iterator<String> iter) {
+        while (iter.hasNext()) {
+            String key = iter.next();
+            String extension;
+            for (String propKey : props.stringPropertyNames()) {
+                if (props.getProperty(propKey).equals(key)) {
+                    extension = "." + propKey;
+                    Path locateThis = Paths.get(
+                            System.getProperty("user.dir"),
+                            props.getProperty("DOCS_ROOT"),
+                            fileName + extension);
+                    if (!locateThis.toFile().exists()) {
+                        iter.remove();
+                    }
+                }
+            }
+        }
     }
 
     /**
